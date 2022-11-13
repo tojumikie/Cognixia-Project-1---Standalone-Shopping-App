@@ -22,7 +22,13 @@ public class App {
 	static String invoiceNo = null;
 	
   public static void main(String[] args) {
-	  SimpleDateFormat sdf = new SimpleDateFormat("ddMMYYYY.HHmmss");
+	  try {
+		displayInvoice();
+	} catch (ClassNotFoundException | SQLException e1) {
+		// TODO Auto-generated catch block
+		e1.printStackTrace();
+	}
+	  SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMdd.HHmmss");
 	  String timeStamp = sdf.format(new Date());
 	  System.out.println(timeStamp);
 	  invoiceNo = timeStamp;
@@ -123,8 +129,9 @@ public class App {
 				ResultSet rs = pstmt.executeQuery();
 				while (rs.next()) {
 					System.out.println(rs.getString("account_id"));
+					sessionUserNo = Integer.parseInt(rs.getString("account_id"));
+					System.out.println(sessionUserNo);
 				}
-				
 				showItems();
 			}
 			else System.out.println("false");
@@ -136,6 +143,7 @@ public class App {
 
 	public static void showItems() {
 		int quantity = 0;
+		String itemCode = null;
 		try {
 			itemDAO.displayItems();
 		} catch (ClassNotFoundException | SQLException e) {
@@ -152,26 +160,59 @@ public class App {
 		else {
 			int intChoice = Integer.parseInt(choice);
 			System.out.println("you chose item " + intChoice);
+			
+			try {
+				Class.forName("com.mysql.cj.jdbc.Driver");
+				Connection conn = DriverManager.getConnection(jdbc, user, pass);
+				String sql = "select item_code from items where item_no = ?";
+				PreparedStatement pstmt = conn.prepareStatement(sql);
+				pstmt.setInt(1, intChoice);
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					System.out.println(rs.getString("item_code"));
+					itemCode = rs.getString("item_code");
+				}
+			} catch (ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			System.out.println("enter the quantity you want to purchase");
 			quantity = kb.nextInt();
 			kb.nextLine();
 			try {
-				packToInvoice(intChoice, quantity);
+				packToInvoice(itemCode, quantity);
 			} catch (ClassNotFoundException | SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
-	public static void packToInvoice(int choice, int quantity) throws ClassNotFoundException, SQLException {
+	public static void packToInvoice(String itemCode, int quantity) throws ClassNotFoundException, SQLException {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Connection conn = DriverManager.getConnection(jdbc, user, pass);
 		String sql = "insert into orders(invoice_no, customer_id, item_code, quantity) values (?,?,?,?)";
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setString(1, invoiceNo);
-//		stmt.setString(2, )
+		stmt.setInt(2, sessionUserNo);
+		stmt.setString(3, itemCode);
+		stmt.setInt(4, quantity);
+		stmt.executeUpdate();
+		conn.close();
 	}
-	public static void displayInvoice() {
-		
+	public static void displayInvoice() throws SQLException, ClassNotFoundException {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		Connection conn = DriverManager.getConnection(jdbc, user, pass);
+		String sql = "select orders.*, items.*, items.price * orders.quantity from orders "
+				+ "join items on orders.item_code = items.item_code";
+		PreparedStatement pstmt = conn.prepareStatement(sql);
+		ResultSet rs = pstmt.executeQuery();
+		System.out.printf("%-20s %-20s %-20s %-20s %-20s %-20s %-20s %-20s %-20s \n", "invoice #", "customer_id", "item_code", "quantity", "item_no", "item_name", "item_code", "price", "total for item");
+		while (rs.next()) {
+			System.out.println(rs.getObject(1));
+		}
 	}
 }

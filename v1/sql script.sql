@@ -5,7 +5,7 @@ create table customer_accounts (
     password char(30)
 );
 create table orders (
-	invoice_no integer not null,
+	invoice_no varchar(30) not null,
     customer_id integer not null,
     item_code varchar(30),
     quantity integer(4),
@@ -31,7 +31,26 @@ insert into items (item_name, item_code, price) values
     ("shirt", "Sh1", 5.00);
     
 select * from items;
-drop table orders;
+drop table orders; 
 select * from orders;
+select * from customer_accounts; 
 
 select max(invoice_no) from orders;
+
+select account_id from customer_accounts where username = 'root';
+
+-- (items.price * orders.quantity as total_price)
+
+select * from orders
+	join items on orders.item_code = items.item_code;
+    
+select orders.*, items.*, (items.price * orders.quantity) as total_for_item
+	from orders join items on orders.item_code = items.item_code;
+
+select *, sum(total_for_item) as invoice_total from 
+	(select orders.invoice_no, orders.customer_id, orders.item_code as item_code_1, orders.quantity,
+	items.item_no, items.item_name, items.item_code as item_code_2, items.price,
+    (items.price * orders.quantity) as total_for_item
+    from orders
+	join items on orders.item_code = items.item_code) as t1
+    group by invoice_no;
