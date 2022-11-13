@@ -1,7 +1,10 @@
 package com.ecommerce.tojumikie;
 
+import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -12,6 +15,7 @@ public class App {
 	static String choice = null;
 	static ItemDAO itemDAO = new ItemDAO();
 	static String sessionUser = null;
+	static int sessionUserNo = 0;
 	static String jdbc = "jdbc:mysql://localhost:3306/shopping_database";
 	static String user = "root";
 	static String pass = "root";
@@ -22,6 +26,18 @@ public class App {
 	  String timeStamp = sdf.format(new Date());
 	  System.out.println(timeStamp);
 	  invoiceNo = timeStamp;
+	  
+	  try {
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		Connection conn = DriverManager.getConnection(jdbc, user, pass);
+		String sql = "select account_id from customer_accounts where username = 'root'";
+		PreparedStatement stmt = conn.prepareStatement(sql);
+		ResultSet rs = stmt.executeQuery();
+	} catch (ClassNotFoundException | SQLException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	  
 //	  System.out.println(timeStamp);
 //	  try {
 //		itemDAO.displayItems();
@@ -98,6 +114,17 @@ public class App {
 			if(found == true) {
 				System.out.println("true");
 				sessionUser = username;
+				Class.forName("com.mysql.cj.jdbc.Driver");
+				Connection conn = DriverManager.getConnection(jdbc, user, pass);
+				String sql = "select account_id from customer_accounts where username = ?";
+				PreparedStatement pstmt = conn.prepareStatement(sql);
+				pstmt.setString(1, username);
+				
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					System.out.println(rs.getString("account_id"));
+				}
+				
 				showItems();
 			}
 			else System.out.println("false");
@@ -119,6 +146,7 @@ public class App {
 		choice = kb.nextLine();
 		if(choice.equalsIgnoreCase("L")) {
 			sessionUser = null;
+			sessionUserNo = 0;
 			menu();
 		}
 		else {
@@ -138,7 +166,10 @@ public class App {
 	public static void packToInvoice(int choice, int quantity) throws ClassNotFoundException, SQLException {
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Connection conn = DriverManager.getConnection(jdbc, user, pass);
-//		String sql = ;
+		String sql = "insert into orders(invoice_no, customer_id, item_code, quantity) values (?,?,?,?)";
+		PreparedStatement stmt = conn.prepareStatement(sql);
+		stmt.setString(1, invoiceNo);
+//		stmt.setString(2, )
 	}
 	public static void displayInvoice() {
 		
